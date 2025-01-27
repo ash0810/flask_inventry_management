@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-5">
+    <h1 class="text-center">メニューデータ更新</h1>
+    <form method="POST" class="mt-4">
+        <table class="table table-bordered">
+            <thead class="thead-light">
+                <tr>
+                    <th>分類</th>
+                    <th>品名</th>
+                    <th>材料</th>
+                    <th>個数</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><input type="text" name="groop" value="{{ post.groop }}" id="groop" class="form-control"></td>
+                    <td><input type="text" name="name" value="{{ post.name }}" id="name" class="form-control"></td>
+                    <td colspan="2">
+                        <div id="ingredients-container">
+                            {% for ingredient in post.ingredients %}
+                                <div class="ingredient form-group">
+                                    <input type="hidden" name="ingredients[{{ loop.index0 }}][id]" value="{{ ingredient.id }}">
+                                    <label for="ingre_{{ loop.index0 }}">材料:</label>
+                                    <input type="text" name="ingredients[{{ loop.index0 }}][name]" value="{{ ingredient.name }}" id="ingre_{{ loop.index0 }}" class="form-control">
+                                    <label for="num_{{ loop.index0 }}">個数:</label>
+                                    <input type="text" name="ingredients[{{ loop.index0 }}][quantity]" value="{{ ingredient.quantity }}" id="num_{{ loop.index0 }}" class="form-control">
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </td>
+                    <td><a href="/{{ post.id }}/menudelete" class="btn btn-danger btn-sm" role="button">削除</a></td>
+                </tr>
+            </tbody>
+        </table>
+        <button type="button" class="btn btn-success mb-3" onclick="addIngredientField()">材料を追加</button>
+        <button type="submit" class="btn btn-primary btn-block">更新</button>
+    </form>
+</div>
+
+<script>
+    function addIngredientField() {
+        const container = document.getElementById("ingredients-container");
+        const index = container.children.length;
+        const div = document.createElement("div");
+        div.classList.add("ingredient", "form-group");
+
+        div.innerHTML = `
+            <input type="hidden" name="ingredients[${index}][id]" value="0">
+            <label for="ingre_${index}">材料:</label>
+            <input type="text" name="ingredients[${index}][name]" id="ingre_${index}" class="form-control">
+            <label for="num_${index}">個数:</label>
+            <input type="text" name="ingredients[${index}][quantity]" id="num_${index}" class="form-control">
+        `;
+
+        container.appendChild(div);
+    }
+</script>
+{% endblock %}

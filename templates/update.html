@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-5">
+    <h1 class="text-center">在庫データ更新</h1>
+    <form method="POST" class="mt-4">
+        <table class="table table-bordered">
+            <thead class="thead-light">
+                <tr>
+                    <th>品名</th>
+                    <th>個数</th>
+                    <th>賞味期限</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><input type="text" name="name" value="{{ post.name }}" id="name" class="form-control"></td>
+                    <td><input type="text" name="num" value="{{ post.num }}" id="num" class="form-control"></td>
+                    <td><input type="text" name="limit" value="{{ post.limit }}" id="limit" class="form-control"></td>
+                    <td><a href="/{{ post.id }}/delete" class="btn btn-danger btn-sm" role="button">削除</a></td>
+                </tr>
+            </tbody>
+        </table>
+        <button type="submit" class="btn btn-primary btn-block">登録</button>
+    </form>
+</div>
+{% endblock %}

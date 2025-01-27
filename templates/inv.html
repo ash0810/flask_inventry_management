@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-5">
+    <h1 class="text-center">在庫管理ページ</h1>
+    <h2 class="mt-4">在庫一覧</h2>
+
+    <table class="table table-bordered mt-3">
+        <thead class="thead-light">
+            <tr>
+                <th>分類</th>
+                <th>品名</th>
+                <th>個数</th>
+                <th>賞味期限</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for post in posts %}
+            <tr>
+                <td>{{ post.groop }}</td>
+                <td>{{ post.name }}</td>
+                <td>{{ post.num }}</td>
+                <td>{{ post.limit }}</td>
+                <td><a href="/{{ post.id }}/update" class="btn btn-warning btn-sm">編集</a></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <h2 class="mt-5">新規登録</h2>
+    <form method="POST" class="mt-3">
+        <div class="form-group">
+            <label for="groop">分類</label>
+            <input type="text" name="groop" id="groop" class="form-control">
+        </div>
+        <div class="form-group">
+            <label for="name">品名</label>
+            <input type="text" name="name" id="name" class="form-control">
+        </div>
+        <div class="form-group">
+            <label for="num">個数</label>
+            <input type="text" name="num" id="num" class="form-control">
+        </div>
+        <div class="form-group">
+            <label for="limit">賞味期限</label>
+            <input type="date" name="limit" id="limit" class="form-control">
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">登録</button>
+    </form>
+
+    <div class="mt-4">
+        <form method="POST" class="mb-2">
+            <input type="hidden" name="action" value="to_menu">
+            <button type="submit" name="page_change" class="btn btn-secondary btn-block">メニューページ</button>
+        </form>
+        <form method="POST">
+            <input type="hidden" name="action" value="to_compare">
+            <button type="submit" name="page_change" class="btn btn-secondary btn-block">比較ページ</button>
+        </form>
+    </div>
+    <a href="/logout" class="btn btn-danger btn-block mt-4" role="button">ログアウト</a>
+</div>
+{% endblock %}
