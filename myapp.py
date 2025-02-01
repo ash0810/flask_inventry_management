@@ -10,15 +10,12 @@ import os
 
 app = Flask(__name__)
 
-#一旦ランダム後で書き換える
-app.config["SECRET_KEY"] = os.urandom(24)
-
 #ログイン管理システム
 login_maneger = LoginManager()
 login_maneger.init_app(app)
 
 db  = SQLAlchemy()
-SQLALCHEMY_DATABASE_URI = 'postgresql+psycopg2://postgres:Ha121211@localhost/postgres'
+SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL', 'postgresql://flask_db_dgoi_user:n1HgTi8FpAF7P8jiKZpEzgjy2DoKQ75R@dpg-cuc7fnbqf0us73c6ppqg-a/flask_db_dgoi')
 app.config['SQLALCHEMY_DATABASE_URI'] = SQLALCHEMY_DATABASE_URI
 db.init_app(app)
 migrate = Migrate(app,db)
