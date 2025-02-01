@@ -14,11 +14,18 @@ app = Flask(__name__)
 login_maneger = LoginManager()
 login_maneger.init_app(app)
 
+
+
 db  = SQLAlchemy()
-SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL', 'postgresql://flask_db_dgoi_user:n1HgTi8FpAF7P8jiKZpEzgjy2DoKQ75R@dpg-cuc7fnbqf0us73c6ppqg-a/flask_db_dgoi')
-app.config['SQLALCHEMY_DATABASE_URI'] = SQLALCHEMY_DATABASE_URI
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
+SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL').replace('postgres://', 'postgresql+psycopg://')
+app.config["SQLALCHEMY_DATABASE_URI"] = SQLALCHEMY_DATABASE_URI
 db.init_app(app)
+
 migrate = Migrate(app,db)
+
+
+
 
 class Menu(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -54,10 +61,15 @@ class User(UserMixin, db.Model):
     username = db.Column(db.String, nullable = False, unique = True)
     password = db.Column(db.String, nullable = False)
     
+    
+    
+    
 #現在のユーザを識別する関数
 @login_maneger.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
+
+
 
 
 
@@ -78,8 +90,6 @@ def login():
         return redirect('/inv')
     elif request.method == 'GET':
         return render_template('login.html', msg=msg)
-
-
 
 #在庫管理、発注
 @app.route("/inv", methods=['GET', 'POST'])
@@ -120,8 +130,7 @@ def inv():
     elif request.method == 'GET':
         return render_template('inv.html',posts = posts)
     
-    
-    
+#メニュー管理画面
 @app.route("/menu", methods=['GET', 'POST'])
 @login_required
 def menu():
@@ -179,9 +188,6 @@ def menu():
     elif request.method == 'GET':
         return render_template('menu.html', posts=posts)
 
-
-
-
 #比較画面
 @app.route("/compare", methods=['GET', 'POST'])
 @login_required
@@ -238,10 +244,6 @@ def compare():
 
     elif request.method == 'GET':
         return render_template('compare.html', posts=posts, day=next_day)
-
-        
-
-
 
 #在庫データ更新画面
 @app.route("/<int:post_id>/update", methods=['GET', 'POST'])
@@ -308,7 +310,6 @@ def menuupdate(post_id):
     elif request.method == "GET":
         return render_template("menuupdate.html", post=post)
 
-
 #在庫削除機能
 @app.route("/<int:post_id>/delete")
 @login_required
@@ -317,7 +318,6 @@ def delete(post_id):
     db.session.delete(post)
     db.session.commit()
     return redirect("/inv")
-
 
 #menu削除機能
 @app.route("/<int:post_id>/menudelete")
@@ -332,8 +332,6 @@ def menudelete(post_id):
     db.session.delete(post)
     db.session.commit()
     return redirect("/menu")
-
-
 
 #サインアップページ
 @app.route("/signup", methods = ['GET','POST'])
@@ -351,8 +349,6 @@ def signup():
     elif request.method == 'GET':
         return render_template('signup.html')
     
-    
-
 #ログアウト
 @app.route("/logout")
 @login_required
