@@ -1,4 +1,4 @@
 飲食店における在庫管理と発注を統合するシステムを目指して開発しました。
 締め作業の際の在庫の目視での確認、発注作業によるその他の作業の遅れを改善するために、現在の在庫、メニュー、曜日ごとの予測を確認し比較することで発注業務と在庫管理業務の効率化を目指しています。
 python,htmlを使用して記述し、バックエンドではflask,フロントエンドではbootstrapを用いて開発し、dbはpostgresqlを使用しました。
-url: https://flask-inventory-management-261311695f3c.herokuapp.com/　ユーザ名:testuser pass:testで例が閲覧できます。
+url: https://flask-inventory-management-261311695f3c.herokuapp.com/ ユーザ名:testuser pass:testで例が閲覧できます。
