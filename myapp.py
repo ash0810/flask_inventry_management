@@ -17,8 +17,10 @@ login_maneger.init_app(app)
 
 
 db  = SQLAlchemy()
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
-SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL').replace('postgres://', 'postgresql+psycopg://')
+#app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
+#SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL').replace('postgres://', 'postgresql+psycopg://')
+app.config['SECRET_KEY'] = os.urandom(24)
+SQLALCHEMY_DATABASE_URI = 'postgresql+psycopg://flask_db_dgoi_user:n1HgTi8FpAF7P8jiKZpEzgjy2DoKQ75R@dpg-cuc7fnbqf0us73c6ppqg-a/flask_db_dgoi'
 app.config["SQLALCHEMY_DATABASE_URI"] = SQLALCHEMY_DATABASE_URI
 db.init_app(app)
 
