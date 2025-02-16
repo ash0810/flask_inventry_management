@@ -118,7 +118,7 @@ def inv():
         return redirect(url_for('login'))  # ログインページにリダイレクト
 
     try:
-        raw_posts = Inventry.query.filter_by(user=current_user.username).order_by(Inventry.groop, Inventry.name).all()
+        raw_posts = Inventry.query.filter_by(user=current_user.username).order_by(Inventry.groop, Inventry.name, Inventry.limit).all()
         seen_names = set()  # 品名の重複を避けるためのセット
         posts = []
 
@@ -177,8 +177,6 @@ def inv():
         return redirect(url_for('inv'))
 
 
-
-    
 #メニュー管理画面
 @app.route("/menu", methods=['GET', 'POST'])
 def menu():
@@ -212,6 +210,7 @@ def menu():
         for i in range(ingredient_count):
             ingredient_name = request.form.get(f'ingredients[{i}][name]')
             ingredient_quantity = request.form.get(f'ingredients[{i}][quantity]')
+            ingredient_quantity = unicodedata.normalize('NFKC', ingredient_quantity)
             if ingredient_name and ingredient_quantity:
                 ingredients.append({'name': ingredient_name, 'quantity': ingredient_quantity})
 
@@ -262,10 +261,12 @@ def compare():
     for prediction in next_day_predictions:
         if prediction.name not in seen_names:
             inventories = Inventry.query.filter_by(user=current_user.username, name=prediction.name).all()
+            total_quantity = sum([inv.num for inv in inventories])  # 同じ品名の在庫数を合計
             posts.append({
                 "groop": prediction.groop,
                 "name": prediction.name,
                 "prediction_num": prediction.num,
+                "total_quantity": total_quantity,
                 "inventories": inventories
             })
             seen_names.add(prediction.name)
@@ -277,8 +278,8 @@ def compare():
         if menu:
             for ingredient in menu.ingredients:
                 required_quantity = int(ingredient.quantity) * prediction.num
-                inventory = Inventry.query.filter_by(user=current_user.username, name=ingredient.name).first()
-                inventory_quantity = inventory.num if inventory else 0
+                inventories = Inventry.query.filter_by(user=current_user.username, name=ingredient.name).all()
+                inventory_quantity = sum([inv.num for inv in inventories])  # 同じ品名の在庫数を合計
                 shortage = max(0, required_quantity - inventory_quantity)
 
                 material_comparison.append({
@@ -286,7 +287,8 @@ def compare():
                     "material_name": ingredient.name,
                     "required_quantity": required_quantity,
                     "inventory_quantity": inventory_quantity,
-                    "shortage": shortage
+                    "shortage": shortage,
+                    "groop": inventories[0].groop if inventories else "材料"  # groopを参照
                 })
 
     if request.method == 'POST':
@@ -299,23 +301,24 @@ def compare():
         elif action == 'add_inventory':
             material_name = request.form.get('material_name')
             shortage = int(request.form.get('shortage'))
+            groop = request.form.get('groop')
 
-            # 在庫に追加
-            existing_inventory = Inventry.query.filter_by(user=current_user.username, name=material_name).first()
-            if existing_inventory:
-                existing_inventory.num += shortage
-                existing_inventory.limit = expiration_date  # 賞味期限更新
-            else:
+            try:
+                # 在庫に新たに追加
                 new_inventory = Inventry(
                     user=current_user.username,
-                    groop="材料",  # 材料なので分類を "材料" としておく
+                    groop=groop,  # 参照したgroopを格納
                     name=material_name,
                     num=shortage,
                     limit=expiration_date
                 )
                 db.session.add(new_inventory)
+                db.session.commit()
+                flash(f"{material_name}の不足分を追加しました。", 'success')
+            except Exception as e:
+                db.session.rollback()
+                flash(f"在庫追加中にエラーが発生しました: {str(e)}", 'error')
 
-            db.session.commit()
             return redirect("/compare")
 
         # 予測データ追加
@@ -339,6 +342,7 @@ def compare():
         next_day_predictions=next_day_predictions,
         material_comparison=material_comparison
     )
+
 
 
 #在庫データ更新画面

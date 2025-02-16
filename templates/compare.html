@@ -2,9 +2,19 @@
 {% block content %}
 <div class="container mt-5">
     <h1 class="text-center text-primary">在庫比較ページ</h1>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="mt-4">
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
     
     <!-- 次の日の予測データのテーブル -->
-    <h2 class="mt-4 text-secondary">明日の注文予測({{ day.strftime('%A') }})</h2>
+    <h2 class="mt-4 text-secondary">明日の注文予測 ({{ day.strftime('%A') }})</h2>
     <table class="table table-hover mt-3 shadow-sm">
         <thead class="thead-dark">
             <tr>
@@ -25,46 +35,45 @@
     </table>
 
     <h2 class="mt-4 text-secondary">在庫比較</h2>
-<table class="table table-hover mt-4 shadow-sm">
-    <thead class="thead-dark">
-        <tr>
-            <th>メニュー名</th>
-            <th>材料名</th>
-            <th>必要数</th>
-            <th>在庫数</th>
-            <th>不足数</th>
-            <th>操作</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for material in material_comparison %}
-        <tr {% if material.shortage > 0 %} class="table-danger" {% endif %}>
-            <td>{{ material.menu_name }}</td>
-            <td>{{ material.material_name }}</td>
-            <td>{{ material.required_quantity }}</td>
-            <td>{{ material.inventory_quantity }}</td>
-            <td>{{ material.shortage }}</td>
-            <td>
-                {% if material.shortage > 0 %}
-                <form method="POST">
-                    <input type="hidden" name="action" value="add_inventory">
-                    <input type="hidden" name="material_name" value="{{ material.material_name }}">
-                    <input type="hidden" name="shortage" value="{{ material.shortage }}">
-                    <button type="submit" class="btn btn-sm btn-success">不足分を追加</button>
-                </form>
-                {% endif %}
-            </td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
-
-
+    <table class="table table-hover mt-4 shadow-sm">
+        <thead class="thead-dark">
+            <tr>
+                <th>メニュー名</th>
+                <th>材料名</th>
+                <th>必要数</th>
+                <th>在庫数</th>
+                <th>不足数</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for material in material_comparison %}
+            <tr {% if material.shortage > 0 %} class="table-danger" {% else %} class="table-success" {% endif %}>
+                <td>{{ material.menu_name }}</td>
+                <td>{{ material.material_name }}</td>
+                <td>{{ material.required_quantity }}</td>
+                <td>{{ material.inventory_quantity }}</td>
+                <td>{{ material.shortage }}</td>
+                <td>
+                    {% if material.shortage > 0 %}
+                    <form method="POST">
+                        <input type="hidden" name="action" value="add_inventory">
+                        <input type="hidden" name="material_name" value="{{ material.material_name }}">
+                        <input type="hidden" name="shortage" value="{{ material.shortage }}">
+                        <input type="hidden" name="groop" value="{{ material.groop }}">
+                        <button type="submit" class="btn btn-sm btn-success">不足分を追加</button>
+                    </form>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 
     <h2 class="mt-5 text-secondary">新規登録</h2>
     <form method="POST" class="mt-3 shadow-sm p-3 mb-5 bg-white rounded">
         <div class="form-group">
-            <label for="options">選択肢</label>
+            <label for="options">曜日の選択</label>
             <select id="options" name="options" class="form-control">
                 <option value="Monday">月曜日</option>
                 <option value="Tuesday">火曜日</option>
