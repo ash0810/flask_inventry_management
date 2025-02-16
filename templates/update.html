@@ -1,10 +1,10 @@
 {% extends 'base.html' %}
 {% block content %}
 <div class="container mt-5">
-    <h1 class="text-center">在庫データ更新</h1>
-    <form method="POST" class="mt-4">
-        <table class="table table-bordered">
-            <thead class="thead-light">
+    <h1 class="text-center text-primary">在庫データ更新</h1>
+    <form method="POST" class="mt-4 shadow-sm p-3 mb-5 bg-white rounded">
+        <table class="table table-hover">
+            <thead class="thead-dark">
                 <tr>
                     <th>品名</th>
                     <th>個数</th>
@@ -17,7 +17,7 @@
                     <td><input type="text" name="name" value="{{ post.name }}" id="name" class="form-control"></td>
                     <td><input type="text" name="num" value="{{ post.num }}" id="num" class="form-control"></td>
                     <td><input type="text" name="limit" value="{{ post.limit }}" id="limit" class="form-control"></td>
-                    <td><a href="/{{ post.id }}/delete" class="btn btn-danger btn-sm" role="button">削除</a></td>
+                    <td><a href="/{{ post.id }}/delete" class="btn btn-outline-danger btn-sm" role="button">削除</a></td>
                 </tr>
             </tbody>
         </table>

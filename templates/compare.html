@@ -1,37 +1,68 @@
 {% extends 'base.html' %}
 {% block content %}
 <div class="container mt-5">
-    <h1 class="text-center">在庫比較ページ</h1>
-
-    <table class="table table-bordered mt-4">
-        <thead class="thead-light">
+    <h1 class="text-center text-primary">在庫比較ページ</h1>
+    
+    <!-- 次の日の予測データのテーブル -->
+    <h2 class="mt-4 text-secondary">明日の注文予測({{ day.strftime('%A') }})</h2>
+    <table class="table table-hover mt-3 shadow-sm">
+        <thead class="thead-dark">
             <tr>
                 <th>分類</th>
                 <th>品名</th>
                 <th>予測個数</th>
-                <th>在庫個数</th>
-                <th>在庫期限</th>
             </tr>
         </thead>
         <tbody>
-            {% for post in posts %}
-                {% for inventory in post.inventories %}
-                <tr>
-                    {% if loop.index == 1 %}
-                    <td rowspan="{{ post.inventories|length }}">{{ post.groop }}</td>
-                    <td rowspan="{{ post.inventories|length }}">{{ post.name }}</td>
-                    <td rowspan="{{ post.inventories|length }}">{{ post.prediction_num }}</td>
-                    {% endif %}
-                    <td>{{ inventory.num }}</td>
-                    <td>{{ inventory.limit }}</td>
-                </tr>
-                {% endfor %}
+            {% for prediction in next_day_predictions %}
+            <tr>
+                <td>{{ prediction.groop }}</td>
+                <td>{{ prediction.name }}</td>
+                <td>{{ prediction.num }}</td>
+            </tr>
             {% endfor %}
         </tbody>
     </table>
 
-    <h2 class="mt-5">新規登録</h2>
-    <form method="POST" class="mt-3">
+    <h2 class="mt-4 text-secondary">在庫比較</h2>
+<table class="table table-hover mt-4 shadow-sm">
+    <thead class="thead-dark">
+        <tr>
+            <th>メニュー名</th>
+            <th>材料名</th>
+            <th>必要数</th>
+            <th>在庫数</th>
+            <th>不足数</th>
+            <th>操作</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for material in material_comparison %}
+        <tr {% if material.shortage > 0 %} class="table-danger" {% endif %}>
+            <td>{{ material.menu_name }}</td>
+            <td>{{ material.material_name }}</td>
+            <td>{{ material.required_quantity }}</td>
+            <td>{{ material.inventory_quantity }}</td>
+            <td>{{ material.shortage }}</td>
+            <td>
+                {% if material.shortage > 0 %}
+                <form method="POST">
+                    <input type="hidden" name="action" value="add_inventory">
+                    <input type="hidden" name="material_name" value="{{ material.material_name }}">
+                    <input type="hidden" name="shortage" value="{{ material.shortage }}">
+                    <button type="submit" class="btn btn-sm btn-success">不足分を追加</button>
+                </form>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+
+
+    <h2 class="mt-5 text-secondary">新規登録</h2>
+    <form method="POST" class="mt-3 shadow-sm p-3 mb-5 bg-white rounded">
         <div class="form-group">
             <label for="options">選択肢</label>
             <select id="options" name="options" class="form-control">
@@ -46,15 +77,15 @@
         </div>
         <div class="form-group">
             <label for="groop">分類</label>
-            <input type="text" name="groop" id="groop" class="form-control">
+            <input type="text" name="groop" id="groop" class="form-control" placeholder="分類を入力">
         </div>
         <div class="form-group">
             <label for="name">品名</label>
-            <input type="text" name="name" id="name" class="form-control">
+            <input type="text" name="name" id="name" class="form-control" placeholder="品名を入力">
         </div>
         <div class="form-group">
             <label for="num">個数</label>
-            <input type="text" name="num" id="num" class="form-control">
+            <input type="text" name="num" id="num" class="form-control" placeholder="個数を入力">
         </div>
         <button type="submit" class="btn btn-primary btn-block">登録</button>
     </form>

@@ -1,16 +1,23 @@
 {% extends 'base.html' %}
 {% block content %}
 <div class="container mt-5">
-    <h1 class="text-center">ログイン</h1>
+    <h1 class="text-center text-primary">ログイン</h1>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} mt-3">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
     {{ msg }}
-    <form method="POST" class="mt-4">
+    <form method="POST" class="mt-4 shadow-sm p-3 mb-5 bg-white rounded">
         <div class="form-group">
             <label for="username">ユーザ名</label>
-            <input type="text" name="username" id="username" class="form-control">
+            <input type="text" name="username" id="username" class="form-control" placeholder="ユーザ名を入力">
         </div>
         <div class="form-group">
             <label for="password">パスワード</label>
-            <input type="password" name="password" id="password" class="form-control">
+            <input type="password" name="password" id="password" class="form-control" placeholder="パスワードを入力">
         </div>
         <button type="submit" class="btn btn-primary btn-block">ログイン</button>
     </form>

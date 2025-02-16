@@ -1,11 +1,11 @@
 {% extends 'base.html' %}
 {% block content %}
 <div class="container mt-5">
-    <h1 class="text-center">メニュー管理ページ</h1>
-    <h2 class="mt-4">メニュー一覧</h2>
+    <h1 class="text-center text-primary">メニュー管理ページ</h1>
+    <h2 class="mt-4 text-secondary">メニュー一覧</h2>
 
-    <table class="table table-bordered mt-3">
-        <thead class="thead-light">
+    <table class="table table-hover mt-3 shadow-sm">
+        <thead class="thead-dark">
             <tr>
                 <th>分類</th>
                 <th>品名</th>
@@ -28,7 +28,7 @@
                         <td>---</td>
                     {% endif %}
                     <td rowspan="{{ row_span }}">
-                        <a href="/{{ post.id }}/menuupdate" class="btn btn-warning btn-sm">編集</a>
+                        <a href="/{{ post.id }}/menuupdate" class="btn btn-outline-warning btn-sm">編集</a>
                     </td>
                 </tr>
                 {% for i in range(1, post.ingre|length) %}
@@ -43,22 +43,22 @@
                     <td>{{ post.name }}</td>
                     <td>---</td>
                     <td>---</td>
-                    <td><a href="/{{ post.id }}/menuupdate" class="btn btn-warning btn-sm">編集</a></td>
+                    <td><a href="/{{ post.id }}/menuupdate" class="btn btn-outline-warning btn-sm">編集</a></td>
                 </tr>
                 {% endif %}
             {% endfor %}
         </tbody>
     </table>
 
-    <h2 class="mt-5">新規登録</h2>
-    <form method="POST" id="ingredient-form" class="mt-3">
+    <h2 class="mt-5 text-secondary">新規登録</h2>
+    <form method="POST" id="ingredient-form" class="mt-3 shadow-sm p-3 mb-5 bg-white rounded">
         <div class="form-group">
             <label for="groop">分類</label>
-            <input type="text" name="groop" id="groop" class="form-control">
+            <input type="text" name="groop" id="groop" class="form-control" placeholder="分類を入力">
         </div>
         <div class="form-group">
             <label for="name">品名</label>
-            <input type="text" name="name" id="name" class="form-control">
+            <input type="text" name="name" id="name" class="form-control" placeholder="品名を入力">
         </div>
         <div class="form-group">
             <label for="ingredient_count">材料の種類数</label>

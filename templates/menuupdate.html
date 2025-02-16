@@ -1,10 +1,10 @@
 {% extends 'base.html' %}
 {% block content %}
 <div class="container mt-5">
-    <h1 class="text-center">メニューデータ更新</h1>
-    <form method="POST" class="mt-4">
-        <table class="table table-bordered">
-            <thead class="thead-light">
+    <h1 class="text-center text-primary">メニューデータ更新</h1>
+    <form method="POST" class="mt-4 shadow-sm p-3 mb-5 bg-white rounded">
+        <table class="table table-hover">
+            <thead class="thead-dark">
                 <tr>
                     <th>分類</th>
                     <th>品名</th>
@@ -30,11 +30,11 @@
                             {% endfor %}
                         </div>
                     </td>
-                    <td><a href="/{{ post.id }}/menudelete" class="btn btn-danger btn-sm" role="button">削除</a></td>
+                    <td><a href="/{{ post.id }}/menudelete" class="btn btn-outline-danger btn-sm" role="button">削除</a></td>
                 </tr>
             </tbody>
         </table>
-        <button type="button" class="btn btn-success mb-3" onclick="addIngredientField()">材料を追加</button>
+        <button type="button" class="btn btn-outline-success mb-3" onclick="addIngredientField()">材料を追加</button>
         <button type="submit" class="btn btn-primary btn-block">更新</button>
     </form>
 </div>

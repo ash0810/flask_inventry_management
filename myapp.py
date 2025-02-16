@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin, LoginManager, login_user, login_required, logout_user, current_user
 from flask_migrate import Migrate
@@ -17,8 +17,18 @@ login_maneger.init_app(app)
 
 
 db  = SQLAlchemy()
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
-SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL').replace('postgres://', 'postgresql+psycopg://')
+if app.debug:
+    app.config["SECRET_KEY"] = os.urandom(24)
+    DB_INFO = {
+        'user':'postgres',
+        'password':'Ha121211',
+        'host':'localhost',
+        'name':'postgres',
+    }
+    SQLALCHEMY_DATABASE_URI = 'postgresql+psycopg://{user}:{password}@{host}/{name}'.format(**DB_INFO)
+else:
+    app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL').replace('postgres://', 'postgresql+psycopg://')
 app.config["SQLALCHEMY_DATABASE_URI"] = SQLALCHEMY_DATABASE_URI
 db.init_app(app)
 
@@ -77,63 +87,103 @@ def load_user(user_id):
 @app.route("/", methods=['GET', 'POST'])
 def login():
     msg = request.args.get('msg', '')
-    if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
-        user = User.query.filter_by(username=username).first()
-        action = request.form.get('action')
-        if action == 'to_signup':
-            return redirect("/signup")
-        if user is None or not check_password_hash(user.password, password):
-            return redirect(url_for('login', msg="ユーザ名、パスワードが違います"))
-        login_user(user)
-        return redirect('/inv')
-    elif request.method == 'GET':
-        return render_template('login.html', msg=msg)
+    try:
+        if request.method == 'POST':
+            username = request.form.get('username')
+            password = request.form.get('password')
+            action = request.form.get('action')
+
+            if action == 'to_signup':
+                return redirect("/signup")
+
+            if not username or not password:
+                return redirect(url_for('login', msg="ユーザ名とパスワードを入力してください"))
+
+            user = User.query.filter_by(username=username).first()
+            if user is None or not check_password_hash(user.password, password):
+                return redirect(url_for('login', msg="ユーザ名、パスワードが違います"))
+
+            login_user(user)
+            return redirect('/inv')
+        elif request.method == 'GET':
+            return render_template('login.html', msg=msg)
+    except Exception as e:
+        return redirect(url_for('login', msg=f"エラーが発生しました: {str(e)}"))
+
 
 #在庫管理、発注
 @app.route("/inv", methods=['GET', 'POST'])
-@login_required
 def inv():
-    raw_posts = Inventry.query.filter_by(user=current_user.username).order_by(Inventry.groop, Inventry.name).all()
-    seen_names = set()  # 品名の重複を避けるためのセット
-    posts = []
+    if not current_user.is_authenticated:
+        return redirect(url_for('login'))  # ログインページにリダイレクト
 
-    for post in raw_posts:
-        # 品名が初めて出現した場合のみフラグを追加
-        if post.name not in seen_names:
-            posts.append({"id": post.id, "groop": post.groop, "name": post.name, "num": post.num, "limit": post.limit.strftime('%Y-%m-%d'), "is_first": True})
-            seen_names.add(post.name)
-        else:
-            posts.append({"id":post.id, "groop": post.groop, "name": post.name, "num": post.num, "limit": post.limit.strftime('%Y-%m-%d'), "is_first": False})
+    try:
+        raw_posts = Inventry.query.filter_by(user=current_user.username).order_by(Inventry.groop, Inventry.name).all()
+        seen_names = set()  # 品名の重複を避けるためのセット
+        posts = []
 
-    #methodの判別
-    if request.method == 'POST':
-        action = request.form.get('action')
+        for post in raw_posts:
+            is_expired = post.limit < datetime.now()  # 賞味期限のチェック
+            if post.name not in seen_names:
+                posts.append({
+                    "id": post.id, "groop": post.groop, "name": post.name,
+                    "num": post.num, "limit": post.limit.strftime('%Y-%m-%d'),
+                    "is_first": True, "is_expired": is_expired
+                })
+                seen_names.add(post.name)
+            else:
+                posts.append({
+                    "id": post.id, "groop": post.groop, "name": post.name,
+                    "num": post.num, "limit": post.limit.strftime('%Y-%m-%d'),
+                    "is_first": False, "is_expired": is_expired
+                })
 
-        if action == 'to_menu':
-            return redirect("/menu")
-        elif action == 'to_compare':
-            return redirect("/compare")
-        #リクエストで来た情報の取得
-        name = request.form.get('name')
-        num = request.form.get('num')
-        limit = request.form.get('limit')
-        groop = request.form.get('groop')
-        
-        num = unicodedata.normalize('NFKC', num)
-        #情報の保存
-        post = Inventry(groop = groop, name=name, num=num, limit=limit, user = current_user.username)
-        db.session.add(post)
-        db.session.commit()
-        return redirect("/inv")
-    elif request.method == 'GET':
-        return render_template('inv.html',posts = posts)
+        if request.method == 'POST':
+            action = request.form.get('action')
+
+            if action == 'to_menu':
+                return redirect("/menu")
+            elif action == 'to_compare':
+                return redirect("/compare")
+
+            # リクエストで来た情報の取得
+            name = request.form.get('name')
+            num = request.form.get('num')
+            limit = request.form.get('limit')
+            groop = request.form.get('groop')
+
+            if not all([name, num, limit, groop]):
+                flash("全てのフィールドを入力してください", 'error')
+                return redirect(url_for('inv'))
+
+            num = unicodedata.normalize('NFKC', num)
+
+            try:
+                # 情報の保存
+                post = Inventry(groop=groop, name=name, num=num, limit=limit, user=current_user.username)
+                db.session.add(post)
+                db.session.commit()
+            except Exception as e:
+                db.session.rollback()
+                flash(f"データベースエラーが発生しました: {str(e)}", 'error')
+                return redirect(url_for('inv'))
+
+            return redirect(url_for('inv'))
+        elif request.method == 'GET':
+            return render_template('inv.html', posts=posts)
+
+    except Exception as e:
+        flash(f"エラーが発生しました: {str(e)}", 'error')
+        return redirect(url_for('inv'))
+
+
+
     
 #メニュー管理画面
 @app.route("/menu", methods=['GET', 'POST'])
-@login_required
 def menu():
+    if not current_user.is_authenticated:
+        return redirect(url_for('login'))  # ログインページにリダイレクト
     raw_posts = Menu.query.filter_by(user=current_user.username).order_by(Menu.groop, Menu.name).all()
     seen_names = set()
     posts = []
@@ -190,65 +240,112 @@ def menu():
 
 #比較画面
 @app.route("/compare", methods=['GET', 'POST'])
-@login_required
 def compare():
+    if not current_user.is_authenticated:
+        return redirect(url_for('login'))  # ログインページにリダイレクト
     today = datetime.today()
     next_day = today + timedelta(days=1)
     next_weekday = next_day.strftime('%A')
+    expiration_date = today + timedelta(days=3)  # 賞味期限は3日後
 
-    # PredictionとInventryをJOINして取得
-    raw_posts = (
+    # 予測データ取得
+    next_day_predictions = (
         db.session.query(Prediction)
-        .join(Inventry, (Prediction.name == Inventry.name) & (Prediction.user == Inventry.user))
         .filter(Prediction.user == current_user.username, Prediction.weekday == next_weekday)
-        .order_by(Inventry.groop, Inventry.name)
+        .order_by(Prediction.groop, Prediction.name)
         .all()
     )
 
-    seen_names = set()  # 品名の重複を避けるためのセット
+    # 予測データと在庫の比較
+    seen_names = set()
     posts = []
-
-    # 重複を避けてデータを整形
-    for post in raw_posts:
-        if post.name not in seen_names:
-            inventories = Inventry.query.filter_by(user=current_user.username, name=post.name).all()
+    for prediction in next_day_predictions:
+        if prediction.name not in seen_names:
+            inventories = Inventry.query.filter_by(user=current_user.username, name=prediction.name).all()
             posts.append({
-                "groop": post.groop,
-                "name": post.name,
-                "prediction_num": post.num,
+                "groop": prediction.groop,
+                "name": prediction.name,
+                "prediction_num": prediction.num,
                 "inventories": inventories
             })
-            seen_names.add(post.name)
+            seen_names.add(prediction.name)
+
+    # 必要な材料の計算
+    material_comparison = []
+    for prediction in next_day_predictions:
+        menu = Menu.query.filter_by(name=prediction.name).first()
+        if menu:
+            for ingredient in menu.ingredients:
+                required_quantity = int(ingredient.quantity) * prediction.num
+                inventory = Inventry.query.filter_by(user=current_user.username, name=ingredient.name).first()
+                inventory_quantity = inventory.num if inventory else 0
+                shortage = max(0, required_quantity - inventory_quantity)
+
+                material_comparison.append({
+                    "menu_name": menu.name,
+                    "material_name": ingredient.name,
+                    "required_quantity": required_quantity,
+                    "inventory_quantity": inventory_quantity,
+                    "shortage": shortage
+                })
 
     if request.method == 'POST':
         action = request.form.get('action')
+
         if action == 'to_menu':
             return redirect("/menu")
         elif action == 'to_inv':
             return redirect("/inv")
-        
-        selected_day = request.form.get('options')      
+        elif action == 'add_inventory':
+            material_name = request.form.get('material_name')
+            shortage = int(request.form.get('shortage'))
+
+            # 在庫に追加
+            existing_inventory = Inventry.query.filter_by(user=current_user.username, name=material_name).first()
+            if existing_inventory:
+                existing_inventory.num += shortage
+                existing_inventory.limit = expiration_date  # 賞味期限更新
+            else:
+                new_inventory = Inventry(
+                    user=current_user.username,
+                    groop="材料",  # 材料なので分類を "材料" としておく
+                    name=material_name,
+                    num=shortage,
+                    limit=expiration_date
+                )
+                db.session.add(new_inventory)
+
+            db.session.commit()
+            return redirect("/compare")
+
+        # 予測データ追加
+        selected_day = request.form.get('options')
         groop = request.form.get('groop')
         name = request.form.get('name')
-        num = request.form.get('num')
-        num = unicodedata.normalize('NFKC', num)
+        num = int(unicodedata.normalize('NFKC', request.form.get('num')))
 
-        # 新しいPredictionを追加
-        post = Prediction(
+        new_prediction = Prediction(
             groop=groop, name=name, num=num,
             user=current_user.username, weekday=selected_day
         )
-        db.session.add(post)
+        db.session.add(new_prediction)
         db.session.commit()
         return redirect("/compare")
 
-    elif request.method == 'GET':
-        return render_template('compare.html', posts=posts, day=next_day)
+    return render_template(
+        'compare.html',
+        posts=posts,
+        day=next_day,
+        next_day_predictions=next_day_predictions,
+        material_comparison=material_comparison
+    )
+
 
 #在庫データ更新画面
 @app.route("/<int:post_id>/update", methods=['GET', 'POST'])
-@login_required
 def update(post_id):    
+    if not current_user.is_authenticated:
+        return redirect(url_for('login'))  # ログインページにリダイレクト
     post = Inventry.query.get(post_id)
     if request.method == "POST":
         post.name = request.form.get('name')
@@ -263,8 +360,9 @@ def update(post_id):
     
 #メニューデータ更新画面
 @app.route("/<int:post_id>/menuupdate", methods=['GET', 'POST'])
-@login_required
 def menuupdate(post_id):
+    if not current_user.is_authenticated:
+        return redirect(url_for('login'))  # ログインページにリダイレクト
     post = Menu.query.get(post_id)
     if request.method == "POST":
         # メニューの基本情報を更新
@@ -312,8 +410,9 @@ def menuupdate(post_id):
 
 #在庫削除機能
 @app.route("/<int:post_id>/delete")
-@login_required
 def delete(post_id):
+    if not current_user.is_authenticated:
+        return redirect(url_for('login'))  # ログインページにリダイレクト
     post = Inventry.query.get(post_id)
     db.session.delete(post)
     db.session.commit()
@@ -321,8 +420,9 @@ def delete(post_id):
 
 #menu削除機能
 @app.route("/<int:post_id>/menudelete")
-@login_required
 def menudelete(post_id):
+    if not current_user.is_authenticated:
+        return redirect(url_for('login'))  # ログインページにリダイレクト
     post = Menu.query.get(post_id)
 
     # 関連する材料を削除
@@ -334,24 +434,39 @@ def menudelete(post_id):
     return redirect("/menu")
 
 #サインアップページ
-@app.route("/signup", methods = ['GET','POST'])
+@app.route("/signup", methods=['GET', 'POST'])
 def signup():
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
-        user = User(username=username,password=password)
-        password = request.form.get('password')
+
+        # ユーザ名が既に使用されていないか確認
+        existing_user = User.query.filter_by(username=username).first()
+        if existing_user:
+            flash("このユーザ名は既に使用されています。別のユーザ名を選んでください。", 'error')
+            return redirect(url_for('signup'))
+
         hashed_pass = generate_password_hash(password)
         user = User(username=username, password=hashed_pass)
-        db.session.add(user)
-        db.session.commit()
+
+        try:
+            db.session.add(user)
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            flash(f"データベースエラーが発生しました: {str(e)}", 'error')
+            return redirect(url_for('signup'))
+
+        flash("ユーザ登録が完了しました。ログインしてください。", 'success')
         return redirect('/')
     elif request.method == 'GET':
         return render_template('signup.html')
+
     
 #ログアウト
 @app.route("/logout")
-@login_required
 def logout():
+    if not current_user.is_authenticated:
+        return redirect(url_for('login'))  # ログインページにリダイレクト
     logout_user()
     return redirect("/")
